@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Scan Document{% endblock %}
+{% block content %}
+<div class="scanner-container">
+    <h1 class="title">Document Scanner</h1>
+    <div class="camera-wrapper">
+        <div class="camera-overlay">
+            <div class="scan-line"></div>
+            <video id="video" autoplay></video>
+        </div>
+        <div class="controls">
+            <button id="scan-btn" class="scan-button">
+                <span class="button-content">
+                    <svg class="scan-icon" viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M3 7V5h2V3h14v2h2v2h-2v10h2v2h-2v2H5v-2H3v-2h2V7H3zm2 0v12h14V7H5zm7 8h4v2h-4v-2zm-4-6h8v4H8V9z"/>
+                    </svg>
+                    Scan Document
+                </span>
+            </button>
+        </div>
+    </div>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <div id="status-message" class="status-message"></div>
+    <!-- Success message container -->
+    <div id="success-popup" class="success-popup">
+        <div class="success-message">
+            Successfully Done!
+        </div>
+    </div>
+</div>
+
+<style>
+.scanner-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.title {
+    color: #2d3748;
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.camera-wrapper {
+    background: #1a202c;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    animation: slideUp 0.8s ease-out;
+}
+
+.camera-overlay {
+    position: relative;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.5rem;
+}
+
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ff8c, transparent);
+    animation: scanLine 2s linear infinite;
+    opacity: 0.7;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.scan-button {
+    background: #4299e1;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scan-button:hover {
+    background: #3182ce;
+    transform: translateY(-2px);
+}
+
+.scan-button:active {
+    transform: translateY(0);
+}
+
+.scan-icon {
+    fill: currentColor;
+}
+
+.status-message {
+    margin-top: 1rem;
+    text-align: center;
+    min-height: 1.5rem;
+    color: #4a5568;
+}
+
+@keyframes scanLine {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(100vh); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Success Popup Style */
+.success-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #38a169;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    display: none;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: popupAnimation 1s ease-out forwards;
+}
+
+@keyframes popupAnimation {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (max-width: 640px) {
+    .scanner-container {
+        margin: 1rem auto;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
+    .camera-wrapper {
+        padding: 0.5rem;
+    }
+}
+</style>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const scanBtn = document.getElementById('scan-btn');
+const statusMessage = document.getElementById('status-message');
+const successPopup = document.getElementById('success-popup');
+
+async function initializeCamera() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        if (videoDevices.length === 0) {
+            showStatus('No camera found on this device.', 'error');
+            return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                deviceId: videoDevices[0].deviceId, // Choose the first camera found
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            } 
+        });
+        
+        video.srcObject = stream;
+        scanBtn.disabled = false;
+        showStatus('Camera ready', 'success');
+    } catch (err) {
+        console.error("Error accessing camera: ", err);
+        if (err.name === 'NotAllowedError') {
+            showStatus('Camera access denied. Please check permissions.', 'error');
+        } else if (err.name === 'NotFoundError') {
+            showStatus('No camera found on this device.', 'error');
+        } else {
+            showStatus('An unknown error occurred while accessing the camera.', 'error');
+        }
+        scanBtn.disabled = true;
+    }
+}
+
+function showStatus(message, type = 'info') {
+    statusMessage.textContent = message;
+    statusMessage.className = `status-message ${type}`;
+}
+
+// Enhanced scan function with visual feedback
+scanBtn.addEventListener('click', async () => {
+    scanBtn.disabled = true;
+    showStatus('Scanning...', 'info');
+    
+    // Add scanning animation
+    scanBtn.classList.add('scanning');
+    
+    try {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        const response = await fetch('/scan_document', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+        
+        const data = await response.json();
+        
+        if (data.filename) {
+            showStatus(`Scan successful: ${data.filename}`, 'success');
+            showSuccessPopup(); // Show success pop-up
+        } else {
+            showStatus('Scan failed. Please try again.', 'error');
+        }
+    } catch (error) {
+        showStatus('Error during scanning. Please try again.', 'error');
+    } finally {
+        scanBtn.disabled = false;
+        scanBtn.classList.remove('scanning');
+    }
+});
+
+// Show success pop-up animation
+function showSuccessPopup() {
+    successPopup.style.display = 'block';
+    setTimeout(() => {
+        successPopup.style.display = 'none'; // Hide after a short delay
+    }, 3000);
+}
+
+initializeCamera();
+</script>
+{% endblock %}

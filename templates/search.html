@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Suche{% endblock %}
+{% block content %}
+<h1>Suche</h1>
+<form action="{{ url_for('search') }}" method="get">
+    <input type="text" name="query" value="{{ query }}" placeholder="Suchbegriff eingeben">
+    <input type="submit" value="Suchen">
+</form>
+{% if results %}
+<h2>Suchergebnisse:</h2>
+<ul>
+    {% for doc in results %}
+    <li>
+        <strong>{{ doc.filename }}</strong><br>
+        <p>{{ doc.context|safe }}</p>
+        <a href="{{ url_for('preview', filename=doc.filename) }}">Dokumentvorschau</a>
+    </li>
+    {% endfor %}
+</ul>
+{% elif query %}
+<p>Keine Ergebnisse gefunden.</p>
+{% endif %}
+{% endblock %}

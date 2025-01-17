@@ -1,0 +1,239 @@
+
+
+
+ {% extends "base.html" %}
+{% block title %}Document Status{% endblock %}
+{% block content %}
+<div class="status-container">
+    <h1 class="title">Document Status</h1>
+    <div class="table-wrapper">
+        <table id="documents-table" class="status-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Filename</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr class="status-row" data-status="{{ doc.status.lower() }}">
+                    <td>{{ doc.id }}</td>
+                    <td>{{ doc.filename }}</td>
+                    <td>
+                        <span class="status-badge {{ doc.status.lower() }}">
+                            {{ doc.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="refresh-indicator" class="refresh-indicator">
+        <svg class="refresh-icon" viewBox="0 0 24 24" width="20" height="20">
+            <path d="M12 4V2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-2.76-1.12-5.26-2.93-7.07l-1.41 1.41C19.17 7.85 20 9.81 20 12c0 4.41-3.59 8-8 8s-8-3.59-8-8 3.59-8 8-8v2l4-3-4-3z"/>
+        </svg>
+        <span>Auto-refreshing...</span>
+    </div>
+</div>
+
+<style>
+.status-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.title {
+    color: #2d3748;
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.table-wrapper {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: slideUp 0.8s ease-out;
+}
+
+.status-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.status-table th,
+.status-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.status-table th {
+    background: #f7fafc;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.status-row {
+    transition: background-color 0.3s;
+}
+
+.status-row:hover {
+    background-color: #f7fafc;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-badge.pending {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.status-badge.processing {
+    background: #bfdbfe;
+    color: #1e40af;
+}
+
+.status-badge.completed {
+    background: #bbf7d0;
+    color: #166534;
+}
+
+.status-badge.error {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.refresh-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.refresh-icon {
+    fill: currentColor;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-row.updating {
+    animation: pulse 1s infinite;
+}
+
+@media (max-width: 640px) {
+    .status-container {
+        margin: 1rem auto;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
+    .status-table th,
+    .status-table td {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+</style>
+
+<script>
+let previousData = [];
+
+function updateRow(row, doc) {
+    row.querySelector('td:nth-child(1)').textContent = doc.id;
+    row.querySelector('td:nth-child(2)').textContent = doc.filename;
+    const statusBadge = row.querySelector('td:nth-child(3) .status-badge');
+    statusBadge.textContent = doc.status;
+    statusBadge.className = `status-badge ${doc.status.toLowerCase()}`;
+}
+
+async function fetchStatus() {
+    try {
+        const response = await fetch('/status_data');
+        const data = await response.json();
+        
+        const table = document.getElementById('documents-table').getElementsByTagName('tbody')[0];
+        
+        // Compare with previous data to highlight changes
+        data.forEach((doc, index) => {
+            const previousDoc = previousData[index];
+            let row = table.children[index];
+            
+            if (!row) {
+                row = table.insertRow();
+                row.innerHTML = `
+                    <td></td>
+                    <td></td>
+                    <td><span class="status-badge"></span></td>
+                `;
+                row.classList.add('status-row');
+            }
+            
+            if (!previousDoc || JSON.stringify(doc) !== JSON.stringify(previousDoc)) {
+                row.classList.add('updating');
+                updateRow(row, doc);
+                setTimeout(() => row.classList.remove('updating'), 1000);
+            }
+        });
+        
+        // Remove extra rows
+        while (table.children.length > data.length) {
+            table.deleteRow(table.children.length - 1);
+        }
+        
+        previousData = data;
+    } catch (error) {
+        console.error('Error fetching status:', error);
+    }
+}
+
+// Initial fetch and setup interval
+fetchStatus();
+setInterval(fetchStatus, 5000);
+</script>
+{% endblock %} 

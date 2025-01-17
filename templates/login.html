@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h2>Login</h2>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('login') }}" class="login-form">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit" class="login-button">Login</button>
+    </form>
+</div>
+
+<!-- Styles -->
+<style>
+    body {
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+        background-color: #f0f0f0; /* Light background by default */
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .login-container {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(15px);
+        padding: 40px 60px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        margin: 50px auto;
+        color: #333;
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        text-align: center;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    .login-container h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #333;
+    }
+
+    .alert {
+        background-color: #ff4d4f;
+        color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-align: center;
+        animation: fadeIn 1s ease;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .form-group label {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        background-color: #fff;
+        color: #333;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    .login-button {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.1rem;
+        background-color: #3f51b5;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Dark Mode */
+    @media (prefers-color-scheme: dark) {
+        body {
+            background-color: #121212; /* Dark background */
+            color: #f1f1f1;
+        }
+
+        .login-container {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
+            color: #f1f1f1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-container h2 {
+            color: #fff;
+        }
+
+        .form-group label {
+            color: #f1f1f1;
+        }
+
+        .form-group input {
+            background-color: #333;
+            color: #fff;
+            border: 2px solid #444;
+        }
+
+        .form-group input:focus {
+            border-color: #3f51b5;
+            outline: none;
+        }
+
+        .login-button {
+            background-color: #3f51b5;
+            color: #fff;
+        }
+
+        .alert {
+            background-color: #ff4d4f;
+            color: #fff;
+        }
+    }
+
+    /* Light Mode (fallback if no system preference) */
+    @media (prefers-color-scheme: light) {
+        body {
+            background-color: #f0f0f0;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.3);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .login-container h2 {
+            color: #333;
+        }
+
+        .form-group label {
+            color: #333;
+        }
+
+        .form-group input {
+            background-color: #fff;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        .login-button {
+            background-color: #3f51b5;
+            color: #fff;
+        }
+
+        .alert {
+            background-color: #ff4d4f;
+            color: #fff;
+        }
+    }
+</style>
+{% endblock %}
